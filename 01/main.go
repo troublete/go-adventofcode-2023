@@ -18,6 +18,8 @@ func First(lines []string) (int, error) {
 		ml := last.FindStringSubmatch(l)
 		r := mf[1] + ml[1]
 
+		fmt.Println(l, r)
+
 		lineCount, err := strconv.Atoi(r)
 		if err != nil {
 			return 0, err
@@ -73,32 +75,20 @@ func Second(lines []string) (int, error) {
 		reverseLookup[reverse(m.Word)] = m.Replacement
 	}
 
-	nameRe := regexp.MustCompile("(" + strings.Join(names, "|") + ")")
-	reverseNameRe := regexp.MustCompile("(" + strings.Join(reverseNames, "|") + ")")
-
+	nameRe := regexp.MustCompile(fmt.Sprintf(`(?U)(^|^[^\d]+)((%s))`, strings.Join(names, "|")))
+	reverseNameRe := regexp.MustCompile(fmt.Sprintf(`(?U)(^|^[^\d]+)((%s))`, strings.Join(reverseNames, "|")))
 	var newLines []string
 	for _, l := range lines {
 		newLine := l
-		forwardCalled := false
-		newLine = nameRe.ReplaceAllStringFunc(newLine, func(s string) string {
-			if forwardCalled {
-				return s
-			}
 
-			forwardCalled = true
-			return lookup[s]
-		})
+		if m := nameRe.FindStringSubmatch(newLine); len(m) > 0 {
+			newLine = strings.ReplaceAll(newLine, m[2], lookup[m[2]])
+		}
 
-		reverseCalled := false
 		reverseLine := reverse(newLine)
-		reverseLine = reverseNameRe.ReplaceAllStringFunc(reverseLine, func(s string) string {
-			if reverseCalled {
-				return s
-			}
-
-			reverseCalled = true
-			return reverseLookup[s]
-		})
+		if m := reverseNameRe.FindStringSubmatch(reverseLine); len(m) > 0 {
+			reverseLine = strings.ReplaceAll(reverseLine, m[2], reverseLookup[m[2]])
+		}
 
 		newLine = reverse(reverseLine)
 		newLines = append(newLines, newLine)
@@ -117,10 +107,10 @@ func main() {
 		return strings.Split(string(contents), "\n")
 	}
 
-	_, err := First(getLines(path.Join(cwd, "01-input.txt")))
-	if err != nil {
-		panic(err)
-	}
+	//first, err := First(getLines(path.Join(cwd, "01-input.txt")))
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	//fmt.Printf("#1 result: %v\n", first)
 
